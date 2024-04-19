@@ -1,15 +1,19 @@
 #!/bin/sh
 
 if [ -z "${PGID}" ]; then
-  PGID="`id -g siyuan`"
+    PGID="`id -g siyuan`"
 fi
 
 if [ -z "${PUID}" ]; then
-  PUID="`id -u siyuan`"
+    PUID="`id -u siyuan`"
+fi
+
+if [ -z "${UMASK}" ]; then
+    UMASK="022"
 fi
 
 if [ -z "${WORK_SPACE}" ]; then
-    exit /opt/siyuan/workspace
+    WORK_SPACE="/opt/siyuan/workspace"
 fi
 
 if [ -z "${SIYUAN_OPTIONS}" ]; then
@@ -20,9 +24,11 @@ if [ -z "${ACCESS_TOKEN}" ]; then
     ACCESS_TOKEN="123456"
 fi
 
+
 echo "=================== 启动参数 ==================="
 echo "USER_GID = ${PGID}"
 echo "USER_UID = ${PUID}"
+echo "UMASK = ${UMASK}"
 echo "SIYUAN_OPTIONS = ${SIYUAN_OPTIONS}"
 echo "WORK_SPACE = ${WORK_SPACE}"
 echo "ACCESS_TOKEN = ${ACCESS_TOKEN}"
@@ -42,6 +48,12 @@ if [ -n "${PUID}" ] && [ "${PUID}" != "`id -u siyuan`" ]; then
     sed -i -e "s/^siyuan:\([^:]*\):[0-9]*:\([0-9]*\)/siyuan:\1:${PUID}:\2/" /etc/passwd
 fi
 
+# 更新umask?
+if [ -n "${UMASK}" ]; then
+    echo "更新umask..."
+    umask ${UMASK}
+fi
+
 # 创建工作空间
 if [ ! -d "${WORK_SPACE}" ];then
     echo "生成工作空间目录 ${WORK_SPACE} ..."
@@ -49,12 +61,6 @@ if [ ! -d "${WORK_SPACE}" ];then
 fi
 chown -R siyuan:siyuan ${WORK_SPACE};
 
-# 文件夹不存在则创建，不知道为啥，反正就得创建，不创建启动会报错
-if [ ! -d "/home/siyuan" ];then
-    # echo "生成 /home/siyuan 目录..."
-    mkdir -p /home/siyuan
-fi
-chown -R siyuan:siyuan /home/siyuan
 
 # 启动思源笔记内核
 if [ -n "${SIYUAN_OPTIONS}" ]; then

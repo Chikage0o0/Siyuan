@@ -1,7 +1,7 @@
 FROM node:21 as NODE_BUILD
 WORKDIR /go/src/github.com/siyuan-note/
-ENV VERSION=v3.0.10
-RUN git clone --depth=1 https://github.com/appdev/siyuan-unlock.git -b ${VERSION} siyuan
+ENV VERSION=v3.0.9
+RUN git clone --depth=1 https://github.com/siyuan-note/siyuan.git -b ${VERSION} siyuan
 WORKDIR /go/src/github.com/siyuan-note/siyuan/
 RUN cd app && npm install -g pnpm@8.14.1 && pnpm install && pnpm run build
 
@@ -24,36 +24,22 @@ RUN apk add --no-cache gcc musl-dev && \
 
 FROM alpine:3
 
-# 赋予脚本执行权限
-COPY entrypoint.sh /usr/bin
-RUN chmod 755 /usr/bin/entrypoint.sh
+# 拷贝可执行文件
 WORKDIR /opt/siyuan/
+COPY entrypoint.sh /usr/bin
 COPY --from=GO_BUILD /opt/siyuan/ /opt/siyuan/
 
 # 定义环境变量
 ENV TZ=Asia/Shanghai
-ENV LANG=zh_CN.UTF-8
-ENV LC_ALL=zh_CN.UTF-8
-ENV LANGUAGE=zh_CN.UTF-8
-ENV WORK_SPACE=/home/siyuan
 ENV RUN_IN_CONTAINER=true
-
 EXPOSE 6806
 
-# 设置时区为上海
-RUN sed -i "s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g" /etc/apk/repositories && \ 
-    apk add -U --no-cache \
-    ca-certificates \
-    bash \
-    curl \
-    su-exec \
-    tzdata && \
-    cp /usr/share/zoneinfo/${TZ} /etc/localtime && \
-    echo ${TZ} > /etc/timezone && \
-    apk del tzdata
 
-# 添加用户
-RUN addgroup -S -g 1000 siyuan && \
-    adduser -S -H -D -h /home/siyuan -s /bin/bash -u 1000 -G siyuan siyuan && \
-    echo "siyuan:*" | chpasswd -e
+# 添加用户&& 设置时区
+RUN addgroup --gid 1000 siyuan && \
+    adduser --uid 1000 --ingroup siyuan --disabled-password siyuan && \
+    apk add --no-cache ca-certificates su-exec tzdata && \
+    chown -R siyuan:siyuan /opt/siyuan/ && \
+    chmod 755 /usr/bin/entrypoint.sh
+
 ENTRYPOINT ["/usr/bin/entrypoint.sh"]
