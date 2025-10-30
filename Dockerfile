@@ -1,6 +1,6 @@
 FROM node:21 as NODE_BUILD
 WORKDIR /go/src/github.com/siyuan-note/
-ENV VERSION=v3.3.5
+ENV VERSION=v3.3.6
 RUN git clone --depth=1 https://github.com/siyuan-note/siyuan.git -b ${VERSION} siyuan
 WORKDIR /go/src/github.com/siyuan-note/siyuan/
 RUN cd app && npm install -g pnpm@8.14.1 && pnpm install && pnpm run build
